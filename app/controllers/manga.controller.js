@@ -197,7 +197,7 @@ async function LatestMangaHeader() {
 
     return latest;
   } catch (error) {
-    console.error(err);
+    console.error(error);
   }
 }
 
