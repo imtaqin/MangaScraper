@@ -402,71 +402,55 @@ async function LatestMangawithPage(number) {
   };
 }
 
-async function latestMangawithPage(number) {
+async function LatestMangawithPage(number) {
   let localBrowser = false;
   try {
     if (!browser) {
-      browser = await puppeteer.launch({ headless: false,
-        args: [
-          "--window-position=000,000",
-          "--no-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-web-security",
-          "--disable-features=IsolateOrigins",
-          "--disable-site-isolation-trials",
-        ],
-        executablePath: executablePath("chrome"),
-       // userDataDir :"tmp"
-      });
-      localBrowser = true;
+      browser = await puppeteer.launch({ headless: true });
+      localBrowser = true; // Indicates that this function launched the browser
     }
 
     const page = await browser.newPage();
-    await page.goto(`${url}page/${number}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${url}page/${number}`, { waitUntil: 'networkidle2' });
 
     const htmlResult = await page.content();
     const $ = cheerio.load(htmlResult);
 
-    const latest = $(".bixbox:eq(2)")
-      .find(".utao")
-      .map((index, element) => {
-        const title = $(element).find("h4").text();
-        const image = $(element).find("img").attr("src");
-        const series = $(element).find(".series").attr("href");
-        const list = $(element)
-          .find(".luf ul li a")
-          .map((_, el) => $(el).attr("href"))
-          .get();
-        return { title, series, image, list };
-      })
-      .get();
+    const latestMangaWithHeaders = await LatestMangawithPageHeader($); // Pass Cheerio instance
+    const fullData = await LatestMangawithPageDesc(latestMangaWithHeaders); // Ensure this function is compatible
 
     const pageNav = $(".hpage a")
       .map((_, el) => $(el).attr("href"))
       .get();
 
+    const prev = pageNav[0]?.replace(url, "");
+    const next = pageNav[1]?.replace(url, "");
+
+    // Only close the browser if it was launched by this function
     if (localBrowser) {
       await browser.close();
-      browser = null;
+      browser = null; // Reset the global browser instance
     }
 
     return {
       message: "Success",
-      data: latest,
+      data: fullData,
       paginate: {
-        next: pageNav[0],
-        prev: pageNav[1],
+        prev,
+        next,
       },
     };
   } catch (error) {
     console.error(error);
-
-    if (browser) {
+    // Close the browser in case of an error if this function opened it
+    if (localBrowser && browser) {
       await browser.close();
+      browser = null; // Reset the global browser instance
     }
     throw error;
   }
 }
+
 
 async function Genre() {
   try {
