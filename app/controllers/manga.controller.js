@@ -3,11 +3,24 @@ const request = require("request-promise");
 const puppeteer = require("puppeteer");
 const url = require("../config/url.js");
 const axios = require("axios");
+const {executablePath} = require("puppeteer");
+
 let browser;
 
 async function ensureBrowser() {
   if (!browser) {
-    browser = await puppeteer.launch({ headless: true });
+    browser = await puppeteer.launch({ headless: false,
+      args: [
+        "--window-position=000,000",
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-web-security",
+        "--disable-features=IsolateOrigins",
+        "--disable-site-isolation-trials",
+      ],
+      executablePath: executablePath("chrome"),
+     // userDataDir :"tmp"
+    });
   }
   return browser;
 }
@@ -220,7 +233,18 @@ async function LatestManga() {
   let localBrowser = false;
   try {
     if (!browser) {
-      browser = await puppeteer.launch({ headless: false });
+      browser = await puppeteer.launch({ headless: false,
+        args: [
+          "--window-position=000,000",
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-web-security",
+          "--disable-features=IsolateOrigins",
+          "--disable-site-isolation-trials",
+        ],
+        executablePath: executablePath("chrome"),
+       // userDataDir :"tmp"
+      });
       localBrowser = true;
     }
 
@@ -382,7 +406,18 @@ async function latestMangawithPage(number) {
   let localBrowser = false;
   try {
     if (!browser) {
-      browser = await puppeteer.launch({ headless: false });
+      browser = await puppeteer.launch({ headless: false,
+        args: [
+          "--window-position=000,000",
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-web-security",
+          "--disable-features=IsolateOrigins",
+          "--disable-site-isolation-trials",
+        ],
+        executablePath: executablePath("chrome"),
+       // userDataDir :"tmp"
+      });
       localBrowser = true;
     }
 
@@ -537,7 +572,18 @@ async function Manga(detail) {
   let localBrowser = false;
   try {
     if (!browser) {
-      browser = await puppeteer.launch({ headless: false });
+      browser = await puppeteer.launch({   headless: false,
+        args: [
+          "--window-position=000,000",
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-web-security",
+          "--disable-features=IsolateOrigins",
+          "--disable-site-isolation-trials",
+        ],
+        executablePath: executablePath("chrome"),
+       // userDataDir :"tmp"
+      });
       localBrowser = true; 
     }
 
@@ -658,7 +704,18 @@ async function Chapter(detail) {
   let localBrowser = false;
   try {
     if (!browser) {
-      browser = await puppeteer.launch({ headless: false });
+      browser = await puppeteer.launch({ headless: false,
+        args: [
+          "--window-position=000,000",
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-web-security",
+          "--disable-features=IsolateOrigins",
+          "--disable-site-isolation-trials",
+        ],
+        executablePath: executablePath("chrome"),
+       // userDataDir :"tmp"
+      });
       localBrowser = true;
     }
 
