@@ -9,17 +9,16 @@ class MangaRouter {
     }
 
     initializeRoutes() {
-        // Middleware to check the API Key
+
         const checkApiKey = (req, res, next) => {
             const providedApiKey = req.headers['x-api-key'];
             if (providedApiKey && providedApiKey === apiKey) {
-                next(); // Valid API key
+                next();
             } else {
                 res.status(401).json({ error: 'Unauthorized: Invalid API key' });
             }
         };
 
-        // Setting up routes with middleware
         this.router.get('/popular-today', checkApiKey, this.handlePopularToday);
         this.router.get('/latest', checkApiKey, this.handleLatestManga);
         this.router.get('/latest/page/:number', checkApiKey, this.handleLatestMangaWithPage);
