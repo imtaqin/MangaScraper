@@ -99,7 +99,9 @@ async function latestManga() {
     await page.goto(url, { waitUntil: "domcontentloaded" });
 
     const htmlResult = await page.content();
-
+    await page.screenshot({
+      path: 'screenshot.jpg'
+    });
     const $ = cheerio.load(htmlResult);
     const latest = $(".bixbox:eq(2)")
       .find(".utao")
@@ -252,6 +254,9 @@ async function LatestManga() {
     await page.goto(url, { waitUntil: "domcontentloaded" });
 
     const htmlResult = await page.content();
+    await page.screenshot({
+      path: 'screenshot-latest.jpg'
+    });
     const $ = cheerio.load(htmlResult);
 
     const latestMangaWithHeaders = await LatestMangaHeader($);
@@ -296,6 +301,9 @@ async function LatestMangawithPageHeader(number) {
     await page.goto(`${url}page/${number}`, { waitUntil: "domcontentloaded" });
 
     const htmlResult = await page.content();
+    await page.screenshot({
+      path: 'screenshot-header.jpg'
+    });
     const $ = cheerio.load(htmlResult);
 
     const latest = $(".bixbox:eq(2)")
@@ -414,6 +422,9 @@ async function LatestMangawithPage(number) {
     await page.goto(`${url}page/${number}`, { waitUntil: 'networkidle2' });
 
     const htmlResult = await page.content();
+    await page.screenshot({
+      path: 'screenshot-latest.jpg'
+    });
     const $ = cheerio.load(htmlResult);
 
     const latestMangaWithHeaders = await LatestMangawithPageHeader($); // Pass Cheerio instance
