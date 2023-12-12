@@ -87,18 +87,19 @@ async function PopularTodays() {
 }
 
 async function latestManga() {
-
+  let localBrowser = false;
   try {
-
-    browser = await puppeteer.launch({
-      headless: false
-    });
+    if (!browser) {
+      browser = await puppeteer.launch({ headless: false });
+      localBrowser = true; // Indicates that this function launched the browser
+    }
 
     const page = await browser.newPage();
 
     await page.goto(url, { waitUntil: "domcontentloaded" });
 
     const htmlResult = await page.content();
+
     await page.screenshot({
       path: 'screenshot.jpg'
     });
@@ -254,6 +255,7 @@ async function LatestManga() {
     await page.goto(url, { waitUntil: "domcontentloaded" });
 
     const htmlResult = await page.content();
+    
     await page.screenshot({
       path: 'screenshot-latest.jpg'
     });
