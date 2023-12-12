@@ -12,7 +12,6 @@ async function ensureBrowser() {
   return browser;
 }
 
-
 async function PopularTodayHeader() {
   try {
     const response = await axios.get(url);
@@ -75,27 +74,47 @@ async function PopularTodays() {
 }
 
 async function latestManga() {
- 
-  try {
-    // Launch a new browser instance
-    browser = await puppeteer.launch();
 
-    // Open a new page
+  try {
+
+    browser = await puppeteer.launch({
+      headless: false
+    });
+
     const page = await browser.newPage();
 
-    // Navigate to the URL
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.goto(url, { waitUntil: "domcontentloaded" });
 
-    // Get the HTML of the page
     const htmlResult = await page.content();
 
-    // Process the HTML with Cheerio
     const $ = cheerio.load(htmlResult);
-    const latest = $('.bixbox:eq(2)')
-      .find('.utao')
+    const latest = $(".bixbox:eq(2)")
+      .find(".utao")
       .map((index, element) => {
-        // ... the rest of your Cheerio code for parsing ...
-        // No changes are needed in the Cheerio code block
+        const title = $(element).find("h4").text();
+        const image = $(element).find("img").attr("src");
+        const series = $(element).find(".series").attr("href");
+        const list = $(element)
+          .find(".luf ul li")
+          .map((index, element) => {
+            const linkRaw = $(element).find("a").attr("href");
+            const link = linkRaw.replace(url, "");
+            const text = $(element).find("a").text();
+            const time = $(element).find("span").text();
+
+            const replaceTime = time
+              .replace(/detik lalu/g, "second ago")
+              .replace(/menit lalu/g, "minute ago")
+              .replace(/jam lalu/g, "hour ago")
+              .replace(/hari lalu/g, "day ago")
+              .replace(/minggu lalu/g, "week ago")
+              .replace(/bulan lalu/g, "month ago")
+              .replace(/tahun lalu/g, "year ago");
+
+            return { linkRaw, link, text, replaceTime };
+          })
+          .get();
+        return { title, series, image, list };
       })
       .get();
 
@@ -105,7 +124,6 @@ async function latestManga() {
       })
       .get();
 
-    // Close the browser
     await browser.close();
 
     return {
@@ -118,11 +136,11 @@ async function latestManga() {
     };
   } catch (error) {
     console.error(error);
-    // Close the browser in case of an error
+
     if (browser) {
       await browser.close();
     }
-    throw error; // Rethrow the error to handle it in the caller function
+    throw error;
   }
 }
 
@@ -199,31 +217,62 @@ async function LatestMangaDesc(latestMangaWithHeaders) {
 }
 
 async function LatestManga() {
-  const htmlResult = await request.get(url);
-  const $ = await cheerio.load(htmlResult);
+  let localBrowser = false;
+  try {
+    if (!browser) {
+      browser = await puppeteer.launch({ headless: false });
+      localBrowser = true;
+    }
 
-  const latestMangaWithHeaders = await LatestMangaHeader();
-  const fullData = await LatestMangaDesc(latestMangaWithHeaders);
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "domcontentloaded" });
 
-  const page = $(".hpage a")
-    .map(function () {
-      return $(this).attr("href");
-    })
-    .get();
+    const htmlResult = await page.content();
+    const $ = cheerio.load(htmlResult);
 
-  return {
-    message: "Success",
-    data: fullData,
-    paginate: {
-      next: page[0].replace(url, ""),
-    },
-  };
+    const latestMangaWithHeaders = await LatestMangaHeader($);
+    const fullData = await LatestMangaDesc(latestMangaWithHeaders);
+
+    const pageNav = $(".hpage a")
+      .map((_, el) => $(el).attr("href"))
+      .get();
+
+    if (localBrowser) {
+      await browser.close();
+      browser = null;
+    }
+
+    return {
+      message: "Success",
+      data: fullData,
+      paginate: {
+        next: pageNav[0]?.replace(url, ""),
+      },
+    };
+  } catch (error) {
+    console.error(error);
+
+    if (localBrowser && browser) {
+      await browser.close();
+      browser = null;
+    }
+    throw error;
+  }
 }
 
 async function LatestMangawithPageHeader(number) {
+  let localBrowser = false;
   try {
-    const htmlResult = await request.get(`${url}page/${number}`);
-    const $ = await cheerio.load(htmlResult);
+    if (!browser) {
+      browser = await puppeteer.launch({ headless: true });
+      localBrowser = true;
+    }
+
+    const page = await browser.newPage();
+    await page.goto(`${url}page/${number}`, { waitUntil: "domcontentloaded" });
+
+    const htmlResult = await page.content();
+    const $ = cheerio.load(htmlResult);
 
     const latest = $(".bixbox:eq(2)")
       .find(".utao")
@@ -258,9 +307,20 @@ async function LatestMangawithPageHeader(number) {
       })
       .get();
 
+    if (localBrowser) {
+      await browser.close();
+      browser = null;
+    }
+
     return latest;
   } catch (error) {
-    console.error(err);
+    console.error(error);
+
+    if (localBrowser && browser) {
+      await browser.close();
+      browser = null;
+    }
+    throw error;
   }
 }
 
@@ -319,9 +379,18 @@ async function LatestMangawithPage(number) {
 }
 
 async function latestMangawithPage(number) {
+  let localBrowser = false;
   try {
-    const htmlResult = await request.get(`${url}page/${number}`);
-    const $ = await cheerio.load(htmlResult);
+    if (!browser) {
+      browser = await puppeteer.launch({ headless: false });
+      localBrowser = true;
+    }
+
+    const page = await browser.newPage();
+    await page.goto(`${url}page/${number}`, { waitUntil: "domcontentloaded" });
+
+    const htmlResult = await page.content();
+    const $ = cheerio.load(htmlResult);
 
     const latest = $(".bixbox:eq(2)")
       .find(".utao")
@@ -329,37 +398,38 @@ async function latestMangawithPage(number) {
         const title = $(element).find("h4").text();
         const image = $(element).find("img").attr("src");
         const series = $(element).find(".series").attr("href");
-        const list = [];
-        $(element)
-          .find(".luf ul")
-          .each((index, element) => {
-            const li = $(element)
-              .find("li a")
-              .each(function () {
-                var href = $(this).attr("href");
-                list.push(href);
-              });
-          });
+        const list = $(element)
+          .find(".luf ul li a")
+          .map((_, el) => $(el).attr("href"))
+          .get();
         return { title, series, image, list };
       })
       .get();
 
-    const page = $(".hpage a")
-      .map(function () {
-        return $(this).attr("href");
-      })
+    const pageNav = $(".hpage a")
+      .map((_, el) => $(el).attr("href"))
       .get();
+
+    if (localBrowser) {
+      await browser.close();
+      browser = null;
+    }
 
     return {
       message: "Success",
       data: latest,
       paginate: {
-        next: page[0],
-        prev: page[1],
+        next: pageNav[0],
+        prev: pageNav[1],
       },
     };
   } catch (error) {
-    console.error(err);
+    console.error(error);
+
+    if (browser) {
+      await browser.close();
+    }
+    throw error;
   }
 }
 
@@ -464,9 +534,18 @@ async function MangaByGenrewithPage(detail, number) {
 }
 
 async function Manga(detail) {
+  let localBrowser = false;
   try {
-    const htmlResult = await request.get(`${url}manga/${detail}`);
-    const $ = await cheerio.load(htmlResult);
+    if (!browser) {
+      browser = await puppeteer.launch({ headless: false });
+      localBrowser = true; 
+    }
+
+    const page = await browser.newPage();
+    await page.goto(`${url}manga/${detail}`, { waitUntil: "domcontentloaded" });
+
+    const htmlResult = await page.content();
+    const $ = cheerio.load(htmlResult);
 
     const komikDetail = $(".bigcontent")
       .map((index, element) => {
@@ -515,8 +594,9 @@ async function Manga(detail) {
       })
       .get();
 
-    const chapter = $("#chapterlist > ul > li > div > div > a")
+      const chapter = $("#chapterlist > ul > li > div > div > a")
       .map((index, element) => {
+
         const linkRaw = $(element).attr("href");
         const link = linkRaw.replace(url, "");
         const name = $(element).find(".chapternum").text();
@@ -526,7 +606,7 @@ async function Manga(detail) {
       })
       .get();
 
-    const recomendation = $("div.listupd > div")
+      const recomendation = $("div.listupd > div")
       .map((index, element) => {
         const title = $(element).find(".tt").text();
         const cleanTitle = title.trim();
@@ -550,25 +630,36 @@ async function Manga(detail) {
       })
       .get();
 
-    return {
-      message: "Success",
-      data: {
-        description: komikDetail,
-        chapter: chapter,
-      },
-      recomendation: recomendation,
-    };
-  } catch (error) {
-    console.error(err);
+      if (localBrowser) {
+        await browser.close();
+        browser = null; 
+      }
+
+      return {
+        message: "Success",
+        data: {
+          description: komikDetail,
+          chapter: chapter,
+        },
+        recomendation: recomendation,
+      };
+    } catch (error) {
+      console.error(error);
+
+      if (localBrowser && browser) {
+        await browser.close();
+        browser = null; 
+      }
+      throw error;
+    }
   }
-}
 
 async function Chapter(detail) {
   let localBrowser = false;
   try {
     if (!browser) {
       browser = await puppeteer.launch({ headless: false });
-      localBrowser = true; // Indicates that this function launched the browser
+      localBrowser = true;
     }
 
     const page = await browser.newPage();
@@ -577,17 +668,14 @@ async function Chapter(detail) {
     const html = await page.content();
     const $ = cheerio.load(html);
 
-    // Extract manga details
     const postArea = $(".postarea").first();
     const rTitle = postArea.find(".headpost > h1").text();
     const title = rTitle.replace(/ Bahasa Indonesia$/, "");
     const mangaInfo = postArea.find(".allc > a").text();
     const mangaInfoUrl = postArea.find(".allc > a").attr("href").replace(url, "");
 
-    // Extract image sources
     const srcList = $("#readerarea img").map((_, el) => $(el).attr("src")).get();
 
-    // Extract chapter details
     const chapterRaw = $("#chapter > option:selected").text();
     const regex = /Chapter (\d+)/;
     const match = regex.exec(chapterRaw);
@@ -595,31 +683,29 @@ async function Chapter(detail) {
 
     const dateTime = postArea.find(".entry-date").attr("datetime");
 
-    // Extract pagination
     const nextprev = $(".nextprev a").map((_, el) => $(el).attr("href")).get();
     const prev = nextprev[0]?.replace(url, "");
     const next = nextprev[1]?.replace(url, "");
 
     if (localBrowser) {
       await browser.close();
-      browser = null; // Reset the global browser instance
+      browser = null;
     }
     return {
       message: "Success",
       data: { title, chapter, mangaInfo, mangaInfoUrl, srcList, dateTime },
       paginate: { prev, next },
     };
-  
+
   } catch (error) {
     console.error(error);
     if (localBrowser && browser) {
       await browser.close();
-      browser = null; // Reset the global browser instance
+      browser = null;
     }
     throw error;
   }
 }
-
 
 module.exports = {
   PopularTodays,
